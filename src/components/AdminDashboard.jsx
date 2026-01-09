@@ -49,9 +49,12 @@ const AdminDashboard = () => {
         setIsAuthenticated(true);
     };
 
+    const [deletingId, setDeletingId] = useState(null);
+
     const deleteSubmission = async (submissionToDelete) => {
         if (!window.confirm('Вы уверены, что хотите удалить эту анкету? Это действие нельзя отменить.')) return;
 
+        setDeletingId(submissionToDelete.id);
         try {
             const response = await fetch('/.netlify/functions/get-submissions', {
                 method: 'DELETE',
@@ -68,12 +71,14 @@ const AdminDashboard = () => {
                     setSelectedSubmission(null);
                 }
             } else {
-                const err = await response.json();
-                alert(`Ошибка при удалении: ${err.error}`);
+                const errData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                alert(`Ошибка при удалении: ${errData.error || response.statusText}`);
             }
         } catch (error) {
             console.error('Delete error:', error);
-            alert('Не удалось удалить анкету. Пожалуйста, попробуйте позже.');
+            alert('Не удалось удалить анкету. Проверьте соединение.');
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -281,10 +286,17 @@ const AdminDashboard = () => {
                                                     e.stopPropagation();
                                                     deleteSubmission(sub);
                                                 }}
-                                                className={`p-3 rounded-xl transition-all hover:scale-110 active:scale-95 ${selectedSubmission === sub ? 'text-white/40 hover:text-white hover:bg-white/10' : 'text-slate-200 hover:text-red-500 hover:bg-red-50'}`}
-                                                title="Удаление доступно в Netlify"
+                                                disabled={deletingId === sub.id}
+                                                className={`p-3 rounded-xl transition-all hover:scale-110 active:scale-95 ${deletingId === sub.id ? 'opacity-50 cursor-not-allowed' :
+                                                        selectedSubmission === sub ? 'text-white/40 hover:text-white hover:bg-white/10' : 'text-slate-200 hover:text-red-500 hover:bg-red-50'
+                                                    }`}
+                                                title="Удалить анкету"
                                             >
-                                                <Trash2 className="w-5 h-5" />
+                                                {deletingId === sub.id ? (
+                                                    <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="w-5 h-5" />
+                                                )}
                                             </button>
                                             <ChevronRight className={`w-5 h-5 transition-transform ${selectedSubmission === sub ? 'text-white/40' : 'text-slate-200 group-hover:translate-x-1'}`} />
                                         </div>

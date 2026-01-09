@@ -106,7 +106,14 @@ exports.handler = async (event, context) => {
             }
         );
 
+        if (!submissionsResponse.ok) {
+            const errText = await submissionsResponse.text();
+            console.error(`Netlify API Error (Submissions): ${submissionsResponse.status} ${errText}`);
+            throw new Error(`Failed to fetch submissions: ${submissionsResponse.statusText}`);
+        }
+
         const submissions = await submissionsResponse.json();
+        console.log(`Successfully fetched ${submissions.length} submissions.`);
 
         const formattedSubmissions = submissions.map(sub => {
             const data = sub.data;
