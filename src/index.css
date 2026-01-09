@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --color-nutritionist-dark: #2d5016;
+  --color-nutritionist-medium: #3d7c1f;
+  --color-nutritionist-light: #4a9d2a;
+  --color-nutritionist-accent: #f8fdf5;
+
+  --font-montserrat: "Montserrat", sans-serif;
+  --font-playfair: "Playfair Display", serif;
+}
+
+:root {
+  font-family: var(--font-montserrat);
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--color-nutritionist-accent);
+}
+
+@layer base {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-playfair);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
