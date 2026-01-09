@@ -48,8 +48,32 @@ const AdminDashboard = () => {
         setIsAuthenticated(true);
     };
 
-    const deleteSubmission = (submissionToDelete) => {
-        alert('Для удаления анкет из облака Netlify воспользуйтесь их панелью управления. В этой версии удаление доступно только для локальных данных.');
+    const deleteSubmission = async (submissionToDelete) => {
+        if (!window.confirm('Вы уверены, что хотите удалить эту анкету? Это действие нельзя отменить.')) return;
+
+        try {
+            const response = await fetch('/.netlify/functions/get-submissions', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionStorage.getItem('admin_password')}`
+                },
+                body: JSON.stringify({ submissionId: submissionToDelete.id })
+            });
+
+            if (response.ok) {
+                setSubmissions(prev => prev.filter(s => s.id !== submissionToDelete.id));
+                if (selectedSubmission?.id === submissionToDelete.id) {
+                    setSelectedSubmission(null);
+                }
+            } else {
+                const err = await response.json();
+                alert(`Ошибка при удалении: ${err.error}`);
+            }
+        } catch (error) {
+            console.error('Delete error:', error);
+            alert('Не удалось удалить анкету. Пожалуйста, попробуйте позже.');
+        }
     };
 
     const formatDate = (dateString) => {
