@@ -26,13 +26,12 @@ exports.handler = async (event, context) => {
     // Handle DELETE request
     if (event.httpMethod === 'DELETE') {
         try {
-            const body = JSON.parse(event.body);
-            const { submissionId } = body;
+            const submissionId = event.queryStringParameters.id;
 
             if (!submissionId) {
                 return {
                     statusCode: 400,
-                    body: JSON.stringify({ error: 'Submission ID is required' }),
+                    body: JSON.stringify({ error: 'Submission ID is required in query params (?id=...)' }),
                 };
             }
 
@@ -50,10 +49,10 @@ exports.handler = async (event, context) => {
             if (!deleteResponse.ok) {
                 const errText = await deleteResponse.text();
                 console.error(`Netlify API Error (Delete): ${deleteResponse.status} ${errText}`);
-                throw new Error(`Failed to delete submission: ${deleteResponse.statusText}`);
+                throw new Error(`Failed to delete from Netlify: ${deleteResponse.statusText}`);
             }
 
-            console.log('Successfully deleted submission.');
+            console.log('Successfully deleted submission from Netlify.');
             return {
                 statusCode: 204,
                 body: '',

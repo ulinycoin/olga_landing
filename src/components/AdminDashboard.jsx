@@ -15,6 +15,14 @@ const AdminDashboard = () => {
     const [password, setPassword] = useState('');
 
     useEffect(() => {
+        const saved = sessionStorage.getItem('admin_password');
+        if (saved) {
+            setPassword(saved);
+            setIsAuthenticated(true);
+        }
+    }, []);
+
+    useEffect(() => {
         if (isAuthenticated) {
             loadSubmissions();
         }
@@ -45,7 +53,7 @@ const AdminDashboard = () => {
 
     const handleLogin = (e) => {
         e.preventDefault();
-        // We will attempt to load submissions to verify password
+        sessionStorage.setItem('admin_password', password);
         setIsAuthenticated(true);
     };
 
@@ -56,27 +64,25 @@ const AdminDashboard = () => {
 
         setDeletingId(submissionToDelete.id);
         try {
-            const response = await fetch('/.netlify/functions/get-submissions', {
+            const response = await fetch(`/.netlify/functions/get-submissions?id=${submissionToDelete.id}`, {
                 method: 'DELETE',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${password}`
-                },
-                body: JSON.stringify({ submissionId: submissionToDelete.id })
+                }
             });
 
-            if (response.ok) {
+            if (response.status === 204 || response.ok) {
                 setSubmissions(prev => prev.filter(s => s.id !== submissionToDelete.id));
                 if (selectedSubmission?.id === submissionToDelete.id) {
                     setSelectedSubmission(null);
                 }
             } else {
-                const errData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                const errData = await response.json().catch(() => ({ error: 'Unknown API error' }));
                 alert(`Ошибка при удалении: ${errData.error || response.statusText}`);
             }
         } catch (error) {
             console.error('Delete error:', error);
-            alert('Не удалось удалить анкету. Проверьте соединение.');
+            alert('Ошибка сети. Не удалось удалить анкету.');
         } finally {
             setDeletingId(null);
         }
@@ -288,7 +294,7 @@ const AdminDashboard = () => {
                                                 }}
                                                 disabled={deletingId === sub.id}
                                                 className={`p-3 rounded-xl transition-all hover:scale-110 active:scale-95 ${deletingId === sub.id ? 'opacity-50 cursor-not-allowed' :
-                                                        selectedSubmission === sub ? 'text-white/40 hover:text-white hover:bg-white/10' : 'text-slate-200 hover:text-red-500 hover:bg-red-50'
+                                                    selectedSubmission === sub ? 'text-white/40 hover:text-white hover:bg-white/10' : 'text-slate-200 hover:text-red-500 hover:bg-red-50'
                                                     }`}
                                                 title="Удалить анкету"
                                             >
