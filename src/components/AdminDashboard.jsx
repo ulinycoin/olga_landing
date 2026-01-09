@@ -31,21 +31,26 @@ const AdminDashboard = () => {
     const loadSubmissions = async () => {
         setIsLoading(true);
         setError(null);
+        const authPassword = password || sessionStorage.getItem('admin_password');
+
         try {
             const response = await fetch('/.netlify/functions/get-submissions', {
                 headers: {
-                    'Authorization': `Bearer ${password}`
+                    'Authorization': `Bearer ${authPassword}`
                 }
             });
             if (!response.ok) {
                 if (response.status === 401) throw new Error('Wrong password');
-                throw new Error('Failed to fetch submissions');
+                throw new Error(`Server error: ${response.status}`);
             }
             const data = await response.json();
             setSubmissions(data);
         } catch (err) {
             setError(err.message);
-            if (err.message === 'Wrong password') setIsAuthenticated(false);
+            if (err.message === 'Wrong password') {
+                setIsAuthenticated(false);
+                sessionStorage.removeItem('admin_password');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -55,6 +60,7 @@ const AdminDashboard = () => {
         e.preventDefault();
         sessionStorage.setItem('admin_password', password);
         setIsAuthenticated(true);
+        // loadSubmissions will be triggered by useEffect
     };
 
     const [deletingId, setDeletingId] = useState(null);
@@ -63,26 +69,33 @@ const AdminDashboard = () => {
         if (!window.confirm('Вы уверены, что хотите удалить эту анкету? Это действие нельзя отменить.')) return;
 
         setDeletingId(submissionToDelete.id);
+        const authPassword = password || sessionStorage.getItem('admin_password');
+
         try {
             const response = await fetch(`/.netlify/functions/get-submissions?id=${submissionToDelete.id}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${password}`
+                    'Authorization': `Bearer ${authPassword}`
                 }
             });
 
             if (response.status === 204 || response.ok) {
+                // Success - remove from local list
                 setSubmissions(prev => prev.filter(s => s.id !== submissionToDelete.id));
                 if (selectedSubmission?.id === submissionToDelete.id) {
                     setSelectedSubmission(null);
                 }
             } else {
-                const errData = await response.json().catch(() => ({ error: 'Unknown API error' }));
-                alert(`Ошибка при удалении: ${errData.error || response.statusText}`);
+                let errorMsg = response.statusText;
+                try {
+                    const errData = await response.json();
+                    errorMsg = errData.error || errorMsg;
+                } catch (e) { }
+                alert(`Ошибка сервера при удалении (${response.status}): ${errorMsg}`);
             }
         } catch (error) {
             console.error('Delete error:', error);
-            alert('Ошибка сети. Не удалось удалить анкету.');
+            alert('Ошибка сети или сервера. Не удалось удалить анкету.');
         } finally {
             setDeletingId(null);
         }

@@ -25,17 +25,19 @@ exports.handler = async (event, context) => {
 
     // Handle DELETE request
     if (event.httpMethod === 'DELETE') {
+        const submissionId = event.queryStringParameters ? event.queryStringParameters.id : null;
+        console.log(`DELETE request received for ID: ${submissionId}`);
+
+        if (!submissionId) {
+            console.error('DELETE Error: No submission ID in query params');
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ error: 'Submission ID is required in query params (?id=...)' }),
+            };
+        }
+
         try {
-            const submissionId = event.queryStringParameters.id;
-
-            if (!submissionId) {
-                return {
-                    statusCode: 400,
-                    body: JSON.stringify({ error: 'Submission ID is required in query params (?id=...)' }),
-                };
-            }
-
-            console.log(`Deleting submission ID: ${submissionId}...`);
+            console.log(`Calling Netlify API to delete submission ${submissionId}...`);
             const deleteResponse = await fetch(
                 `https://api.netlify.com/api/v1/submissions/${submissionId}`,
                 {
@@ -48,17 +50,20 @@ exports.handler = async (event, context) => {
 
             if (!deleteResponse.ok) {
                 const errText = await deleteResponse.text();
-                console.error(`Netlify API Error (Delete): ${deleteResponse.status} ${errText}`);
-                throw new Error(`Failed to delete from Netlify: ${deleteResponse.statusText}`);
+                console.error(`Netlify API Error (Delete) for ${submissionId}: ${deleteResponse.status} ${errText}`);
+                return {
+                    statusCode: deleteResponse.status,
+                    body: JSON.stringify({ error: `Netlify API error: ${deleteResponse.statusText}` }),
+                };
             }
 
-            console.log('Successfully deleted submission from Netlify.');
+            console.log(`Successfully deleted submission ${submissionId} from Netlify.`);
             return {
                 statusCode: 204,
                 body: '',
             };
         } catch (error) {
-            console.error('Error during deletion:', error);
+            console.error(`Fatal error deleting submission ${submissionId}:`, error);
             return {
                 statusCode: 500,
                 body: JSON.stringify({ error: error.message }),
