@@ -45,6 +45,7 @@ const AdminDashboard = () => {
 
     const handleLogin = (e) => {
         e.preventDefault();
+        // We will attempt to load submissions to verify password
         setIsAuthenticated(true);
     };
 
@@ -56,7 +57,7 @@ const AdminDashboard = () => {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${sessionStorage.getItem('admin_password')}`
+                    'Authorization': `Bearer ${password}`
                 },
                 body: JSON.stringify({ submissionId: submissionToDelete.id })
             });
